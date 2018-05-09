@@ -345,13 +345,21 @@ namespace mobile_ca
             }
         }
 
+        /// <summary>
+        /// Creates a PFX file
+        /// </summary>
+        /// <param name="Certificate">Main Certificate</param>
+        /// <param name="PrivateKey">Private Key of Certificate</param>
+        /// <param name="Parents">Parent certificates</param>
+        /// <param name="Password">Password</param>
+        /// <returns>PFX binary</returns>
         public static byte[] CreatePfx(string Certificate, string PrivateKey, string[] Parents, string Password)
         {
+            Logger.Log("Creating PFX file.");
             using (var PfxFile = new KillHandle())
             {
                 using (var CertFile = new KillHandle())
                 {
-                    //CertFile.WriteAllText(Certificate);
                     if (Parents == null)
                     {
                         CertFile.WriteAllText(Certificate);
@@ -363,18 +371,6 @@ namespace mobile_ca
                     using (var KeyFile = new KillHandle())
                     {
                         KeyFile.WriteAllText(PrivateKey);
-                        /*
-                        var args = new string[] {
-                            "pkcs12",
-                            "-export",
-                            "-nodes",
-                            "-out", PfxFile.FileName,
-                            "-inkey", KeyFile.FileName,
-                            "-in", CertFile.FileName,
-                            "-passout", $"pass:{Password}",
-                            null, null
-                        };
-                        //*/
                         var args = new string[] {
                             "pkcs12",
                             "-export",
@@ -392,8 +388,6 @@ namespace mobile_ca
                             using (var ParentFile = new KillHandle())
                             {
                                 ParentFile.WriteAllLines(Parents);
-                                //args[args.Length - 2] = "-certfile";
-                                //args[args.Length - 1] = ParentFile.FileName;
                                 Run(args);
                             }
                         }
