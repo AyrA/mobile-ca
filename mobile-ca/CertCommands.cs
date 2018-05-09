@@ -75,7 +75,7 @@ namespace mobile_ca
         /// <returns>true if successfull</returns>
         public static bool Obtain(string Destination = "<proc>", bool Overwrite = false)
         {
-            var Base = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(Destination == "<proc>" ? Process.GetCurrentProcess().MainModule.FileName : Destination)), "Data");
+            var Base = Path.GetFullPath(Destination == "<proc>" ? Tools.ProcessDirectory : Destination);
             foreach (var Entry in OpenSSLBinaries)
             {
                 var Dest = Path.Combine(Base, Entry.Value);
