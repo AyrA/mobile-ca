@@ -40,14 +40,14 @@ namespace mobile_ca
         /// Simple OpenSSL Validation
         /// </summary>
         /// <returns>true if openssl available and answering</returns>
-        public static bool ValidateOpenSSL()
+        public static bool ValidateOpenSSL(bool CheckVersion = false)
         {
             var FullPath = Path.GetDirectoryName(Path.Combine(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName), OPENSSL_COMMAND));
             if (File.Exists(Path.Combine(FullPath, OPENSSL_COMMAND)) &&
                 File.Exists(Path.Combine(FullPath, "libeay32.dll")) &&
                 File.Exists(Path.Combine(FullPath, "ssleay32.dll")))
             {
-                if (string.IsNullOrEmpty(Version()))
+                if (CheckVersion && string.IsNullOrEmpty(Version()))
                 {
                     Logger.Error("The command 'openssl.exe version' did not work as expected. Invalid binaries?");
                     return false;

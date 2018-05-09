@@ -77,7 +77,7 @@ namespace mobile_ca
             DateTime Start = DateTime.UtcNow;
             Logger.Info("Application Start at {0}", Start);
 
-            if (CertCommands.ValidateOpenSSL())
+            if (CertCommands.ValidateOpenSSL(true))
             {
                 var A = ParseArgs(args);
 
