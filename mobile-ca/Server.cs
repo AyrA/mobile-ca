@@ -11,6 +11,9 @@ using System.Threading;
 
 namespace mobile_ca
 {
+    /// <summary>
+    /// HTTP Server
+    /// </summary>
     public class Server : IDisposable
     {
         #region API Types
@@ -177,8 +180,17 @@ namespace mobile_ca
 
         #endregion
 
+        /// <summary>
+        /// Gets the base URL of the HTTP listener
+        /// </summary>
         public string BaseURL { get; private set; }
+        /// <summary>
+        /// Gets the base path for the key and certificate files
+        /// </summary>
         public string Base { get; private set; }
+        /// <summary>
+        /// Gets if the HTTP server is listening
+        /// </summary>
         public bool IsListening
         {
             get
@@ -206,24 +218,39 @@ namespace mobile_ca
             }
         }
 
+        /// <summary>
+        /// This is a list of resources the server delivers locally.
+        /// </summary>
         private static readonly List<BinaryContent> LocalContent = new List<BinaryContent>
         {
-            new BinaryContent("/bootstrap.css",Properties.Resources.bootstrap_css,true),
-            new BinaryContent("/bootstrap.js",Properties.Resources.bootstrap_js,true),
-            new BinaryContent("/jquery.js",Properties.Resources.jquery_slim_js,true),
-            new BinaryContent("/popper.js",Properties.Resources.popper_js,true),
-            new BinaryContent("/index.html",Properties.Resources.index_html,true),
-            new BinaryContent("/api.js",Properties.Resources.api_js,true),
-            new BinaryContent("/custom.css",Properties.Resources.custom_css,true)
+            new BinaryContent("/bootstrap.css",Properties.Resources.bootstrap_css, true),
+            new BinaryContent("/bootstrap.js", Properties.Resources.bootstrap_js,  true),
+            new BinaryContent("/jquery.js",    Properties.Resources.jquery_slim_js,true),
+            new BinaryContent("/popper.js",    Properties.Resources.popper_js,     true),
+            new BinaryContent("/index.html",   Properties.Resources.index_html,    true),
+            new BinaryContent("/api.js",       Properties.Resources.api_js,        true),
+            new BinaryContent("/custom.css",   Properties.Resources.custom_css,    true)
         };
 
         private HttpListener L;
 
+        /// <summary>
+        /// Checks if the given Port is valid
+        /// </summary>
+        /// <param name="Port">Port number</param>
+        /// <returns>true if value</returns>
+        /// <remarks>Excludes the lowest and highest possible values. Ignores admin requirement for low ports</remarks>
         public static bool IsValidPort(int Port)
         {
             return Port > ushort.MinValue && Port < ushort.MaxValue;
         }
 
+        /// <summary>
+        /// Creates and starts a HTTP listener
+        /// </summary>
+        /// <param name="Port">Port number</param>
+        /// <param name="StartBrowser">true to launch the users web browser after a sucessful start</param>
+        /// <param name="CertBasePath">Base path for certificate and key files</param>
         public Server(int Port, bool StartBrowser = false, string CertBasePath = "<proc>")
         {
             if (string.IsNullOrEmpty(CertBasePath))
@@ -282,12 +309,19 @@ namespace mobile_ca
             }
         }
 
+        /// <summary>
+        /// Stops and disposes the component
+        /// </summary>
         public void Dispose()
         {
             Logger.Debug("HTTP: Disposing Webserver");
             Shutdown();
         }
 
+        /// <summary>
+        /// Shuts down the server
+        /// </summary>
+        /// <remarks>As of now there is no way to restart an existing instance</remarks>
         public void Shutdown()
         {
             lock (this)
@@ -311,6 +345,8 @@ namespace mobile_ca
                 }
             }
         }
+
+        #region HTTP Connection and decider Logic
 
         private void conin(IAsyncResult ar)
         {
@@ -485,6 +521,8 @@ namespace mobile_ca
             }
         }
 
+        #endregion
+
         #region HTTP Answer types
 
         private void SendBinary(HttpListenerContext ctx, byte[] Content, string FakeName, bool IsUtf8 = false)
@@ -569,7 +607,7 @@ Location:
 
         #endregion
 
-        #region API
+        #region API Functions
 
         private void Config(HttpListenerContext ctx)
         {
