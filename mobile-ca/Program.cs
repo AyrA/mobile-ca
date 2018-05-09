@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -417,9 +416,9 @@ namespace mobile_ca
                         default:
                             if (A.Mode == Mode.server)
                             {
-                                if (Server.IsValidPort(IntOrDefault(arg, -1)))
+                                if (Server.IsValidPort(Tools.IntOrDefault(arg, -1)))
                                 {
-                                    A.Port = IntOrDefault(arg);
+                                    A.Port = Tools.IntOrDefault(arg);
                                     A.Action = Action.create;
                                 }
                                 else
@@ -430,9 +429,9 @@ namespace mobile_ca
                             }
                             else if (A.Mode == Mode.rsa)
                             {
-                                if (CertCommands.IsValidKeySize(IntOrDefault(arg)))
+                                if (CertCommands.IsValidKeySize(Tools.IntOrDefault(arg)))
                                 {
-                                    A.RsaSize = IntOrDefault(arg);
+                                    A.RsaSize = Tools.IntOrDefault(arg);
                                     A.Action = Action.create;
                                 }
                                 else
@@ -498,7 +497,7 @@ namespace mobile_ca
                             {
                                 if (A.Expiration == 0)
                                 {
-                                    A.Expiration = IntOrDefault(args[++i]);
+                                    A.Expiration = Tools.IntOrDefault(args[++i]);
                                     if (A.Expiration < 1)
                                     {
                                         Logger.Error("Invalid expiration: {0}", args[i]);
@@ -563,7 +562,7 @@ namespace mobile_ca
                                 {
                                     if (arg.ToLower() == "/ip")
                                     {
-                                        if (CertCommands.IsValidIp(args[i + 1]))
+                                        if (Tools.IsValidIp(args[i + 1]))
                                         {
                                             A.IPs.Add(args[++i]);
                                         }
@@ -575,7 +574,7 @@ namespace mobile_ca
                                     }
                                     else
                                     {
-                                        if (CertCommands.IsValidDomainName(args[i + 1]))
+                                        if (Tools.IsValidDomainName(args[i + 1]))
                                         {
                                             A.Domains.Add(args[++i]);
                                         }
@@ -1085,114 +1084,6 @@ port  - Required; Port number from {1}-{2}. 4 or 5 digit numbers recommended to 
             }
         }
 
-#if DEBUG
-        /// <summary>
-        /// Tests cert system by making a root Cert and perform a proper request
-        /// </summary>
-        private static void _TEST()
-        {
-            //You want to use at least 2048 for real certificates (better 4096) but for testing we want it to be fast only.
-            var Key1 = CertCommands.GenerateKey(CertCommands.ValidKeySizes.Min());
-            var Key2 = CertCommands.GenerateKey(CertCommands.ValidKeySizes.Min());
-            Logger.Log("Got Key");
-            var CA = CertCommands.GenerateRootCert(Key1);
-            Logger.Log("Got CA");
-            var CRT = CertCommands.GenerateCertificate(Key1, CA, Key2, "test.local", "a.sub.test.local ::1 *.test.local 123.123.123.123".Split(' '));
-            Logger.Log("Got Cert");
-
-            Logger.Log("Installing root certificate");
-            var Hash = CertStore.GetThumb(CA);
-            if (CertStore.InstallRoot(CA))
-            {
-                Logger.Log("Installed Cert {0} into CA store", Hash);
-            }
-            else
-            {
-                Logger.Error("Root CA not installed.");
-            }
-
-            using (var F = new KillHandle(@"C:\Users\Administrator\Desktop\CA_TEST.crt"))
-            {
-                F.WriteAllText(CA);
-                using (var P = System.Diagnostics.Process.Start(F.FileName))
-                {
-                    P.WaitForExit();
-                }
-            }
-            using (var F = new KillHandle(@"C:\Users\Administrator\Desktop\CRT_TEST.crt"))
-            {
-                F.WriteAllText(CRT);
-                using (var P = System.Diagnostics.Process.Start(F.FileName))
-                {
-                    P.WaitForExit();
-                }
-            }
-
-            Logger.Log("Removing root certificate");
-            Logger.Log("Removed {0} Certs from CA store", CertStore.RemoveRoot(Hash));
-        }
-
-        /// <summary>
-        /// Lists all properties and fields from an object
-        /// </summary>
-        /// <param name="o">Object</param>
-        public static void Props(object o)
-        {
-            if (o == null)
-            {
-                Console.Error.WriteLine("object is <null>");
-                return;
-            }
-            var T = o.GetType();
-            var PLen = T.GetProperties().Select(m => m.Name.Length).ToArray();
-            var FLen = T.GetFields().Select(m => m.Name.Length).ToArray();
-            var Len = Math.Max(PLen.Length > 0 ? PLen.Max() : 0, FLen.Length > 0 ? FLen.Max() : 0);
-
-            Console.Error.WriteLine("Object: {0}", T.FullName);
-            Console.Error.WriteLine("Properties:");
-            foreach (var P in T.GetProperties())
-            {
-                var Value = P.GetValue(o);
-                if (Value is IEnumerable && !(Value is string) && !(Value is byte[]))
-                {
-                    Console.Error.WriteLine("{0}: <enumerable>", P.Name.PadRight(Len));
-                    var E = Value as IEnumerable;
-                    foreach (var EE in E)
-                    {
-                        Console.Error.WriteLine("{0}: {1}", string.Empty.PadRight(Len), EE);
-                    }
-                }
-                else
-                {
-                    if (Value is byte[])
-                    {
-                        Console.Error.WriteLine("{0}: {1}", P.Name.PadRight(Len), BitConverter.ToString((byte[])Value, 0, ((byte[])Value).Length));
-                    }
-                    else
-                    {
-                        Console.Error.WriteLine("{0}: {1}", P.Name.PadRight(Len), Value);
-                    }
-                }
-            }
-            foreach (var F in T.GetFields())
-            {
-                var Value = F.GetValue(o);
-                if (Value is IEnumerable)
-                {
-                    Console.Error.WriteLine("{0}: <enumerable>", F.Name.PadRight(Len));
-                    var E = Value as IEnumerable;
-                    foreach (var EE in E)
-                    {
-                        Console.Error.WriteLine("{0}: {1}", string.Empty.PadRight(Len), EE);
-                    }
-                }
-                else
-                {
-                    Console.Error.WriteLine("{0}: {1}", F.Name.PadRight(Len), F.GetValue(o));
-                }
-            }
-        }
-#endif
         /// <summary>
         /// Waits for a key press
         /// </summary>
@@ -1218,12 +1109,6 @@ port  - Required; Port number from {1}-{2}. 4 or 5 digit numbers recommended to 
                 Logger.Error("Can't read {0}. Reason: {1}", FileName, ex.Message);
                 return null;
             }
-        }
-
-        private static int IntOrDefault(object o, int Default = 0)
-        {
-            int i = 0;
-            return o == null ? Default : (int.TryParse(o.ToString(), out i) ? i : Default);
         }
     }
 }

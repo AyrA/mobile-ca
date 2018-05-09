@@ -26,6 +26,7 @@ namespace mobile_ca
         /// </summary>
         public const string OPENSSL_COMMAND = @"openssl.exe";
 #endif
+
         /// <summary>
         /// Valid RSA Key sizes.
         /// </summary>
@@ -35,6 +36,16 @@ namespace mobile_ca
         /// 8192 has been confirmed to work under Windows 7
         /// </remarks>
         public static readonly int[] ValidKeySizes = { 1024, 2048, 4096, 8192 };
+
+        /// <summary>
+        /// List of required OpenSSL binaries and where to obtain them
+        /// </summary>
+        private static readonly Dictionary<string, string> OpenSSLBinaries = new Dictionary<string, string>()
+        {
+            {"https://master.ayra.ch/LOGIN/pub/applications/Tools/OpenSSL/openssl.exe" ,"openssl.exe" },
+            {"https://master.ayra.ch/LOGIN/pub/applications/Tools/OpenSSL/libeay32.dll","libeay32.dll"},
+            {"https://master.ayra.ch/LOGIN/pub/applications/Tools/OpenSSL/ssleay32.dll","ssleay32.dll"}
+        };
 
         /// <summary>
         /// Simple OpenSSL Validation
@@ -55,6 +66,37 @@ namespace mobile_ca
                 return true;
             }
             return false;
+        }
+
+        /// <summary>
+        /// Downloads a copy of the required OpenSSL binaries
+        /// </summary>
+        /// <param name="Destination">Destination Directory</param>
+        /// <returns>true if successfull</returns>
+        public static bool Obtain(string Destination = "<proc>", bool Overwrite = false)
+        {
+            var Base = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(Destination == "<proc>" ? Process.GetCurrentProcess().MainModule.FileName : Destination)), "Data");
+            foreach (var Entry in OpenSSLBinaries)
+            {
+                var Dest = Path.Combine(Base, Entry.Value);
+                if (Overwrite || !File.Exists(Dest))
+                {
+                    Logger.Log("Downloading {0}", Entry.Value);
+                    using (var WC = new WebClient())
+                    {
+                        try
+                        {
+                            WC.DownloadFile(Entry.Key, Dest);
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.Error("Unable to download {0} from {1}. Reason: {2}", Entry.Value, Entry.Key, ex.Message);
+                            return false;
+                        }
+                    }
+                }
+            }
+            return true;
         }
 
         /// <summary>
@@ -221,13 +263,13 @@ namespace mobile_ca
                 Logger.Error("ExpirationDays too small");
                 throw new ArgumentOutOfRangeException("ExpirationDays");
             }
-            if (!IsValidIp(HostName) && !IsValidDomainName(HostName))
+            if (!Tools.IsValidIp(HostName) && !Tools.IsValidDomainName(HostName))
             {
                 Logger.Error("HostName is invalid domain name or IP");
                 throw new FormatException("HostName is invalid domain name or IP");
             }
 
-            if (SAN != null && !SAN.All(m => IsValidDomainName(m) || IsValidIp(m)))
+            if (SAN != null && !SAN.All(m => Tools.IsValidDomainName(m) || Tools.IsValidIp(m)))
             {
                 throw new FormatException("SAN contains invalid domain name or IP");
             }
@@ -501,11 +543,11 @@ namespace mobile_ca
             for (var i = 0; i < RET.Length; i++)
             {
                 var S = SAN[i];
-                if (IsValidIp(S))
+                if (Tools.IsValidIp(S))
                 {
                     RET[i] = string.Format("IP.{0}:{1}", ++IpCount, S);
                 }
-                else if (IsValidDomainName(S))
+                else if (Tools.IsValidDomainName(S))
                 {
                     RET[i] = string.Format("DNS.{0}:{1}", ++DnsCount, S);
                 }
@@ -517,41 +559,6 @@ namespace mobile_ca
             }
             Logger.Debug("SAN: {0}", string.Join(",", RET));
             return string.Join(",", RET);
-        }
-
-        /// <summary>
-        /// Checks if the given name is a valid DNS name
-        /// </summary>
-        /// <param name="Param">Name</param>
-        /// <returns>true if valid name</returns>
-        public static bool IsValidDomainName(string Param)
-        {
-            if (!string.IsNullOrEmpty(Param) && Param.Length < 0x100)
-            {
-                //Remove wildcard mask if available
-                if (Param.StartsWith("*."))
-                {
-                    Param = Param.Substring(2);
-                }
-                return Uri.CheckHostName(Param) == UriHostNameType.Dns;
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// Checks if the given parameter is a valid IP Address
-        /// </summary>
-        /// <param name="Param">Possible IP Address</param>
-        /// <returns>true if IP</returns>
-        /// <remarks>Works with IPv4 and IPv6</remarks>
-        public static bool IsValidIp(string Param)
-        {
-            if (!string.IsNullOrEmpty(Param))
-            {
-                IPAddress A = IPAddress.Any;
-                return IPAddress.TryParse(Param, out A);
-            }
-            return false;
         }
     }
 }

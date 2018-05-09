@@ -59,6 +59,7 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Include="Server.cs" />
+    <Compile Include="Tools.cs" />
     <Compile Include="Unicode.cs" />
   </ItemGroup>
   <ItemGroup>

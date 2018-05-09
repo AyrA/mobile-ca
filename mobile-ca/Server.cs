@@ -18,6 +18,8 @@ namespace mobile_ca
     {
         #region API Types
 
+#pragma warning disable CS0649
+
         private class ApiConfig
         {
             public int[] sizes = CertCommands.ValidKeySizes
@@ -174,9 +176,11 @@ namespace mobile_ca
                     !string.IsNullOrEmpty(ou) &&
                     !string.IsNullOrEmpty(cn) &&
                     !string.IsNullOrEmpty(e) &&
-                    CertStore.IsSHA1(parent);
+                    Tools.IsSHA1(parent);
             }
         }
+
+#pragma warning restore CS0649
 
         #endregion
 
@@ -210,7 +214,7 @@ namespace mobile_ca
             {
                 this.URL = URL;
                 Data = Content;
-                Hash = Server.Hash(Content);
+                Hash = Tools.Hash(Content);
                 this.IsUtf8 = IsUtf8;
             }
             public BinaryContent(string URL, string Content, bool IsUtf8) : this(URL, Encoding.UTF8.GetBytes(Content), IsUtf8)
@@ -257,7 +261,7 @@ namespace mobile_ca
             {
                 throw new ArgumentException("Invalid Base Path");
             }
-            Base = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(CertBasePath == "<proc>" ? Process.GetCurrentProcess().MainModule.FileName : CertBasePath)), "Data");
+            Base = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(CertBasePath == "<proc>" ? Tools.ProcessDirectory : CertBasePath)), "Data");
             if (!IsValidPort(Port))
             {
                 throw new ArgumentOutOfRangeException("Port");
@@ -623,7 +627,7 @@ Location:
         {
             if (ctx.Request.HasEntityBody)
             {
-                var Req = FromJson<ApiPfxRequest>(ReadAllText(ctx.Request.InputStream, ctx.Request.ContentEncoding));
+                var Req = ctx.Request.InputStream.ReadAllText(ctx.Request.ContentEncoding).FromJson<ApiPfxRequest>();
                 if (Req != null && !string.IsNullOrWhiteSpace(Req.cert) && !string.IsNullOrWhiteSpace(Req.key))
                 {
                     var Data = CertCommands.CreatePfx(Req.cert, Req.key, Req.parents, Req.password);
@@ -640,7 +644,7 @@ Location:
         {
             if (ctx.Request.HasEntityBody)
             {
-                var Req = FromJson<ApiThumbprint>(ReadAllText(ctx.Request.InputStream, ctx.Request.ContentEncoding));
+                var Req = ctx.Request.InputStream.ReadAllText(ctx.Request.ContentEncoding).FromJson<ApiThumbprint>();
                 if (Req != null && !string.IsNullOrEmpty(Req.id))
                 {
                     var FileName = Path.Combine(Base, Req.id + ".cli.crt");
@@ -683,7 +687,7 @@ Location:
         {
             if (ctx.Request.HasEntityBody)
             {
-                var Req = FromJson<ApiCertCreate>(ReadAllText(ctx.Request.InputStream, ctx.Request.ContentEncoding));
+                var Req = ctx.Request.InputStream.ReadAllText(ctx.Request.ContentEncoding).FromJson<ApiCertCreate>();
                 if (Req != null && Req.Valid())
                 {
                     string Key = null;
@@ -758,7 +762,7 @@ Location:
         {
             if (ctx.Request.HasEntityBody)
             {
-                var Req = FromJson<ApiThumbprint>(ReadAllText(ctx.Request.InputStream, ctx.Request.ContentEncoding));
+                var Req = ctx.Request.InputStream.ReadAllText(ctx.Request.ContentEncoding).FromJson<ApiThumbprint>();
                 if (Req != null && !string.IsNullOrEmpty(Req.id))
                 {
                     var FileName = Path.Combine(Base, Req.id + ".ca.crt");
@@ -790,7 +794,7 @@ Location:
         {
             if (ctx.Request.HasEntityBody)
             {
-                var Req = FromJson<ApiCaCreate>(ReadAllText(ctx.Request.InputStream, ctx.Request.ContentEncoding));
+                var Req = ctx.Request.InputStream.ReadAllText(ctx.Request.ContentEncoding).FromJson<ApiCaCreate>();
                 if (Req != null && Req.Valid())
                 {
                     string Key = null;
@@ -845,7 +849,7 @@ Location:
         {
             if (ctx.Request.HasEntityBody)
             {
-                var Req = FromJson<ApiId>(ReadAllText(ctx.Request.InputStream, ctx.Request.ContentEncoding));
+                var Req = ctx.Request.InputStream.ReadAllText(ctx.Request.ContentEncoding).FromJson<ApiId>();
                 if (Req != null && Req.id != Guid.Empty)
                 {
                     var FileName = Path.Combine(Base, Req.id.ToString() + ".key");
@@ -887,7 +891,7 @@ Location:
         {
             if (ctx.Request.HasEntityBody)
             {
-                var Req = FromJson<ApiGenRsaKey>(ReadAllText(ctx.Request.InputStream, ctx.Request.ContentEncoding));
+                var Req = ctx.Request.InputStream.ReadAllText(ctx.Request.ContentEncoding).FromJson<ApiGenRsaKey>();
                 if (Req != null && CertCommands.IsValidKeySize(Req.keySize))
                 {
                     var Key = CertCommands.GenerateKey(Req.keySize);
@@ -916,50 +920,6 @@ Location:
                 return;
             }
             SendJson(ctx, "Invalid Request Method", false);
-        }
-
-        #endregion
-
-        #region UTILS
-
-        private static string Hash(byte[] Content)
-        {
-            using (var HA = new SHA1Managed())
-            {
-                return BitConverter.ToString(HA.ComputeHash(Content)).Replace("-", "");
-            }
-        }
-
-        private static string Hash(string Content)
-        {
-            return Hash(Encoding.UTF8.GetBytes(Content));
-        }
-
-        private static T FromJson<T>(string JSON, T Default = default(T))
-        {
-            Logger.Debug("HTTP: Decoding {0}", JSON);
-            try
-            {
-                return JsonConvert.DeserializeObject<T>(JSON);
-            }
-            catch (Exception ex)
-            {
-                Logger.Debug("HTTP: Failed to decode JSON.\r\nHTTP: Error: {0}\r\n:HTTP: Data: {1}", ex.Message, JSON);
-                return Default;
-            }
-        }
-
-        private static string ReadAllText(Stream S, Encoding E = null)
-        {
-            if (S == null)
-            {
-                return null;
-            }
-
-            using (var SR = new StreamReader(S, E == null ? Encoding.UTF8 : E, true))
-            {
-                return SR.ReadToEnd();
-            }
         }
 
         #endregion

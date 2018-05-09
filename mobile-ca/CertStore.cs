@@ -129,16 +129,6 @@ namespace mobile_ca
             return null;
         }
 
-        public static bool IsSHA1(string parent)
-        {
-            if (!string.IsNullOrEmpty(parent))
-            {
-                var R = new Regex(@"^[\da-fA-F]{40}$");
-                return R.IsMatch(parent);
-            }
-            return false;
-        }
-
         /// <summary>
         /// Gets the Name of a certificate
         /// </summary>
