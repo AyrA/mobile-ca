@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net;
 
@@ -18,12 +19,12 @@ namespace mobile_ca
         /// <summary>
         /// Command for OpenSSL
         /// </summary>
-        private const string OPENSSL_COMMAND = @"C:\OpenSSL-Win32\bin\openssl.exe";
+        public const string OPENSSL_COMMAND = @"C:\OpenSSL-Win32\bin\openssl.exe";
 #else
         /// <summary>
         /// Command for OpenSSL
         /// </summary>
-        private const string OPENSSL_COMMAND = @"openssl.exe";
+        public const string OPENSSL_COMMAND = @"openssl.exe";
 #endif
         /// <summary>
         /// Valid RSA Key sizes.
@@ -34,6 +35,20 @@ namespace mobile_ca
         /// 8192 has been confirmed to work under Windows 7
         /// </remarks>
         public static readonly int[] ValidKeySizes = { 1024, 2048, 4096, 8192 };
+
+        public static bool ValidateOpenSSL()
+        {
+            var FullPath = Path.GetDirectoryName(Path.Combine(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName), OPENSSL_COMMAND));
+            if (File.Exists(Path.Combine(FullPath, OPENSSL_COMMAND)) &&
+                File.Exists(Path.Combine(FullPath, "libeay32.dll")) &&
+                File.Exists(Path.Combine(FullPath, "ssleay32.dll")))
+            {
+                Logger.Debug("OpenSSL Version: {0}", Run("version"));
+                return true;
+            }
+            return false;
+
+        }
 
         /// <summary>
         /// Tests if the given Number is a valid Key Size
