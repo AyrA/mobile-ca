@@ -1,0 +1,7 @@
+﻿tbody tr[data-content] {
+    cursor: pointer;
+}
+h1 button,
+th button {
+    float:right;
+}

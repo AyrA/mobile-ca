@@ -1,0 +1,647 @@
+﻿<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="utf-8" />
+    <link rel="stylesheet" type="text/css" href="bootstrap.css" />
+    <link rel="stylesheet" type="text/css" href="custom.css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="popper.js"></script>
+    <script type="text/javascript" src="bootstrap.js"></script>
+    <script type="text/javascript" src="api.js"></script>
+    <title>Mobile CA</title>
+</head>
+<body>
+    <div class="container">
+        <h1>
+            Mobile CA
+            <button id="btnHelp" class="btn">?</button>
+        </h1>
+        <p>
+            Use this page to manage your mobile certificate authority
+        </p>
+        <h2>Private keys</h2>
+        <table id="keys" class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Data</th>
+                    <th><button id="btnNewKey" disabled type="button" class="btn btn-primary">+</button></th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <h2>Root certificate</h2>
+        <table id="ca" class="table">
+            <thead>
+                <tr>
+                    <th>Thumbprint</th>
+                    <th>Name</th>
+                    <th><button id="btnNewCA" disabled type="button" class="btn btn-primary">+</button></th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <h2>Certificates</h2>
+        <table id="cert" class="table">
+            <thead>
+                <tr>
+                    <th>Thumbprint</th>
+                    <th>Domains</th>
+                    <th><button id="btnNewCert" disabled type="button" class="btn btn-primary">+</button></th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <div class="text-right"><i>Copyright &copy; 2018 by Kevin Gut</i></div>
+    </div>
+
+    <div id="modHelp" class="modal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Help</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <h1>mobile-ca</h1>
+                    <p>
+                        This is a mobile certificate authority.
+                        You can use it to issue certificates for your local websites or development projects.
+                        This makes managing internal certificates for an organization as easy as possible.<br />
+                        It can be used as command line application or as a web service.
+                        Both provide almost identical features.
+                    </p>
+
+                    <h2>Command line</h2>
+                    <p>
+                        Execute <code>mobile-ca /?</code> for an extensive help message.
+                        The command line allows you to perform all the tasks necessary to run a CA.
+                        It has additional capabilities compared to the website:
+                        <ul>
+                            <li>Read and write certificate to any accessible paths, not only the "Data" subdirectory</li>
+                            <li>Install and uninstall certificates from/to the root store.</li>
+                        </ul>
+                    </p>
+
+                    <h2>Website</h2>
+                    <p>
+                        This website allows you to perform all the necessary steps to issue certificates.
+                        This is what you want to use if you are not used to the command line.
+                        Launch it using <code>mobile-ca /http 55555 /b</code>.
+                        You can of course use alternative port numbers. <code>/b</code> launches your browser automatically.<br />
+                        <br />
+                        All certificates and keys are contained in the subdirectory "Data".
+                        The application is stateless,
+                        as long as you adhere to the naming conventions you can also manage that directory manually.
+                        It's recommended to shut down the server before doing so to avoid error messages for non-existing data.
+                    </p>
+
+                    <h2>Example</h2>
+                    <p>
+                        Generating your first certificate is very simple and works identical on command line and website:
+                        <ol>
+                            <li>
+                                Create a new RSA key.<br />
+                                More bits is safer but also slower in generating. 4096 can take a minute
+                            </li>
+                            <li>
+                                Create a root certificate with the RSA key you created.<br />
+                                Set the expiration long enough (the default is 3650 days)
+                                and set the "Common Name" to something you recognize.
+                                The other fields don't matter too much but you can use them to further personalize your certificate.
+                            </li>
+                            <li>
+                                Create an additional RSA key.<br />
+                                You don't need to match the bits and can use a stronger or weaker key.
+                            </li>
+                            <li>
+                                Create a new certificate using your latest RSA key and the Root certificate.<br />
+                                The important fields here are the Primary Domain Name (Common Name) and the Additional names (SAN).<br />
+                                The primary domain name is what this certificates main domain is supposed to be.
+                                This is normally the most important domain this certificate is for, or the domain closest to the top level.<br />
+                                Additional names is for adding IP addresses and domain names of additional domains you want this certificate to be valid for.
+                                You can add as many as you like.
+                                Most common use is to add <code>example.local</code> as your Common Name and <code>www.example.local</code> as a SAN.<br />
+                                <br />
+                                Tip: Both fields accept <code>*.yourdomain</code> to make this certificate a Wildcard certificate.
+                                Be aware though that <code>*.yourdomain</code> is not valid for <code>test.*.yourdomain</code> or <code>yourdomain</code> itself.
+                            </li>
+                        </ol>
+                    </p>
+
+                    <h2>Certificate validation</h2>
+                    <p>
+                        Computers will not trust your certificates by default.
+                        To make them trust you, you need to install the certificate into the trusted store.
+                        You can either install a single certificate to trust it,
+                        or you can install a root certificate to automatically trust all certificates that are isued by that root.
+                        The latter case is how certificates normally work.
+                    </p>
+
+                    <h2>Limitations</h2>
+                    <p>
+                        This application has some limitations and also will allow you to do things you really should not.
+                        You can cause the application to misbehave or generate certificates that will bog down the system or will simply not work.
+                        <ul>
+                            <li><b>No safety checks</b>: You can generate certificates with weak keys or SHA1 signatures that browsers might no longer accept.</li>
+                            <li><b>No bounds checks</b>: You can create certificates with hundreds of SAN entries.</li>
+                            <li><b>No date checks</b>: You can create certificates which are still valid after their root certificate has already expired.</li>
+                            <li><b>No authentication</b>: Even though this site runs only on localhost, no authentication checks are performed and anyone with access to this machine can use this CA.</li>
+                            <li><b>Key reuse</b>: You can use the same RSA key as often as you want. In reality you want to use a key only once.</li>
+                        </ul>
+
+                    </p>
+                    <h2>More</h2>
+                    <p>
+                        This project was made possible and makes heavy usage of OpenSSL.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modAlert" class="modal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Message</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="modConfirm" class="modal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Please confirm this action</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                </div>
+                <div class="modal-footer">
+                    <button id="btnConfirmYes" type="button" class="btn btn-success">Yes</button>
+                    <button id="btnConfirmNo" type="button" class="btn btn-danger">No</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="modPrompt" class="modal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Message</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="control-label"></label>
+                        <input type="text" class="form-control" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modCertDetails" class="modal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Certificate Details</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="control-label">RSA Key Id</label>
+                                <input id="certRsaKeyId" type="text" class="form-control" readonly />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="control-label">Issuer</label>
+                                <input id="certParent" type="text" class="form-control" readonly />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="control-label">Valid From</label>
+                                <input id="certValidFrom" type="text" class="form-control" readonly />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="control-label">Valid To</label>
+                                <input id="certValidTo" type="text" class="form-control" readonly />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="control-label">Issued for</label>
+                        <input id="certDetailName" type="text" class="form-control" readonly />
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="control-label">Thumbprint</label>
+                                <input id="certDetailId" type="text" class="form-control" readonly />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="control-label">Primary Domain</label>
+                                <input id="certDomain" type="text" class="form-control" readonly />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="control-label">List of registered Domains and IP addresses</label>
+                        <select id="certDomainList" readonly multiple size="1" class="form-control"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Certificate</label>
+                        <textarea id="certDetailData" readonly class="form-control" rows="4"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="btnCertDelete" type="button" class="btn btn-danger">Delete</button>
+                    <button id="btnCertDownloadPub" type="button" class="btn btn-success">Download (Public)</button>
+                    <button id="btnCertDownloadPriv" type="button" class="btn btn-success">Download (Full)</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="modCertGen" class="modal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create new certificate</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="control-label">RSA Key Id</label>
+                                    <select id="certKeyId" class="form-control"></select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="control-label">Root Certificate</label>
+                                    <select id="certRoot" class="form-control"></select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="control-label">Country Code</label>
+                                    <input type="text" class="form-control" maxlength="2" pattern="[a-zA-Z]{2}" id="certCC" value="XX" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="control-label">State</label>
+                                    <input type="text" class="form-control" id="certST" value="Local" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="control-label">Locality (Town)</label>
+                                    <input type="text" class="form-control" id="certL" value="Local" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="control-label">Organization</label>
+                                    <input type="text" class="form-control" id="certO" value="ACME" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="control-label">Organization Unit</label>
+                                    <input type="text" class="form-control" id="certOU" value="ACME" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="control-label">Primary Domain name</label>
+                                    <input type="text" class="form-control" id="certCN" value="acme.local" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="control-label">E-Mail</label>
+                                    <input type="email" class="form-control" id="certE" value="ACME@example.com" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="control-label">Expiration (in days)</label>
+                                    <input type="number" min="1" class="form-control" id="certEXP" value="365" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="control-label">Additional domains and IP addresses (one per line)</label><br />
+                                    <textarea id="certAdditional" rows="3" class="form-control">www.acme.local</textarea>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="control-label">Options</label><br />
+                                    <label class="control-label">
+                                        <input type="checkbox" id="certSHA256" value="Y" checked />
+                                        Use SHA256 instead of SHA1
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button id="btnCertGen" type="button" class="btn btn-primary">Generate</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modCADetails" class="modal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">CA Cert Details</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="control-label">RSA Key Id</label>
+                        <input id="caRsaKeyId" type="text" class="form-control" readonly />
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="control-label">Thumbprint</label>
+                                <input id="caDetailId" type="text" class="form-control" readonly />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="control-label">Name</label>
+                                <input id="caDetailName" type="text" class="form-control" readonly />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="control-label">Valid From</label>
+                                <input id="caValidFrom" type="text" class="form-control" readonly />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="control-label">Valid To</label>
+                                <input id="caValidTo" type="text" class="form-control" readonly />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Certificate</label>
+                        <textarea id="caDetailData" readonly class="form-control" rows="10"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="btnCADelete" type="button" class="btn btn-danger">Delete</button>
+                    <button id="btnCADownloadPub" type="button" class="btn btn-success">Download (Public)</button>
+                    <button id="btnCADownloadPriv" type="button" class="btn btn-success">Download (Full)</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="modCAGen" class="modal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create new CA certificate</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="control-label">RSA Key Id</label>
+                                    <select id="caKeyId" class="form-control"></select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="control-label">Country Code</label>
+                                    <input type="text" class="form-control" maxlength="2" pattern="[a-zA-Z]{2}" id="caCC" value="XX" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="control-label">State</label>
+                                    <input type="text" class="form-control" id="caST" value="Local" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="control-label">Locality (Town)</label>
+                                    <input type="text" class="form-control" id="caL" value="Local" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="control-label">Organization</label>
+                                    <input type="text" class="form-control" id="caO" value="ACME" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="control-label">Organization Unit</label>
+                                    <input type="text" class="form-control" id="caOU" value="ACME" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="control-label">Common Name</label>
+                                    <input type="text" class="form-control" id="caCN" value="ACME Root CA" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="control-label">E-Mail</label>
+                                    <input type="email" class="form-control" id="caE" value="ACME@example.com" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="control-label">Expiration (in days)</label>
+                                    <input type="number" min="1" class="form-control" id="caEXP" value="3650" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="control-label">Options</label><br />
+                                    <label class="control-label">
+                                        <input type="checkbox" id="caSHA256" value="Y" checked />
+                                        Use SHA256 instead of SHA1
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button id="btnCAGen" type="button" class="btn btn-primary">Generate</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modKeyDetails" class="modal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">RSA Key Details</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="control-label">Id</label>
+                                <input type="text" class="form-control" readonly />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="alert alert-info">
+                                Remove the word "RSA" from the first and last line if an application is not accepting the key
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Private Key</label>
+                        <textarea readonly class="form-control privkey" rows="5"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Public Key</label>
+                        <textarea readonly class="form-control pubkey" rows="5"></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>CA Certificates with this key</label>
+                                <select id="selKeyCAList" readonly multiple class="form-control"></select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Certificates with this key</label>
+                                <select id="selKeyCertList" readonly multiple class="form-control"></select>
+                            </div>
+                        </div>
+                    </div>
+
+
+                </div>
+                <div class="modal-footer">
+                    <button id="btnKeyDelete" type="button" class="btn btn-danger">Delete</button>
+                    <button id="btnKeyDownload" type="button" class="btn btn-success">Download Private key</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="modKeyGen" class="modal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">RSA Key Generator</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>
+                        Use this window to generate RSA keys.
+                        Larger keys are safer but require more time to create.
+                        1024 bit and lower is considered insecure.
+                        We recommend and individual key for each certificate.
+                    </p>
+                    <label class="control-label">Key size</label>
+                    <select class="form-control"></select>
+                </div>
+                <div class="modal-footer">
+                    <button id="btnKeyGen" type="button" class="btn btn-primary">Generate</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
