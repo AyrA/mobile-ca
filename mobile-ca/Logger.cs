@@ -29,7 +29,7 @@ namespace mobile_ca
         /// <summary>
         /// Minimum Level required for Log output
         /// </summary>
-        public static LogType MinLogLevel = LogType.Info;
+        public static LogType MinLogLevel = LogType.Log;
 #endif
         /// <summary>
         /// Log types in order of severity Low to High

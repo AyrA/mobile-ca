@@ -184,7 +184,7 @@ namespace mobile_ca
         /// <returns>Certificate</returns>
         public static string GenerateCertificate(string RootKey, string CaCert, string PrivateKey, string HostName, string[] SAN = null, int ExpirationDays = 3650, bool UseSha256 = true, string CountryCode = "XX", string State = "Local", string Town = "Local", string Organization = "ACME", string OrganizationUnit = "ACME", string EmailAddress = "ACME@example.com")
         {
-            Logger.Log("Generating Root CA");
+            Logger.Log("Generating Certificate");
             if (string.IsNullOrEmpty(HostName))
             {
                 Logger.Error("HostName not specified");

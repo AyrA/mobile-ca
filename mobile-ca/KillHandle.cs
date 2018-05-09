@@ -149,7 +149,7 @@ namespace mobile_ca
                     }
                     LastRemovalError = null;
                     FileDeleted = true;
-                    Logger.Log("File deleted: {0}", FileName);
+                    Logger.Debug("File deleted: {0}", FileName);
                 }
                 catch (Exception ex)
                 {

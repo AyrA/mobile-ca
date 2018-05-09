@@ -336,7 +336,7 @@ namespace mobile_ca
                 ctx.Response.AddHeader("Strict-Transport-Security", "max-age=15552000");
             }
 
-            Logger.Log("HTTP: FROM={0} METHOD={1} URL={2}", ctx.Request.UserHostName, ctx.Request.HttpMethod, ctx.Request.Url);
+            Logger.Log("HTTP: {0} {1}", ctx.Request.HttpMethod, ctx.Request.Url.AbsolutePath);
             switch (ctx.Request.HttpMethod.ToLower())
             {
                 case "get":
