@@ -36,6 +36,10 @@ namespace mobile_ca
         /// </remarks>
         public static readonly int[] ValidKeySizes = { 1024, 2048, 4096, 8192 };
 
+        /// <summary>
+        /// Simple OpenSSL Validation
+        /// </summary>
+        /// <returns>true if openssl available and answering</returns>
         public static bool ValidateOpenSSL()
         {
             var FullPath = Path.GetDirectoryName(Path.Combine(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName), OPENSSL_COMMAND));
@@ -43,11 +47,23 @@ namespace mobile_ca
                 File.Exists(Path.Combine(FullPath, "libeay32.dll")) &&
                 File.Exists(Path.Combine(FullPath, "ssleay32.dll")))
             {
-                Logger.Debug("OpenSSL Version: {0}", Run("version"));
+                if (string.IsNullOrEmpty(Version()))
+                {
+                    Logger.Error("The command 'openssl.exe version' did not work as expected. Invalid binaries?");
+                    return false;
+                }
                 return true;
             }
             return false;
+        }
 
+        /// <summary>
+        /// Obtains current Version number of OpenSSL
+        /// </summary>
+        /// <returns>OpenSSL Version</returns>
+        public static string Version()
+        {
+            return Run("version");
         }
 
         /// <summary>

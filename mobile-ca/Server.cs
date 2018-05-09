@@ -186,6 +186,7 @@ namespace mobile_ca
                 return L != null && L.IsListening;
             }
         }
+
         private class BinaryContent
         {
             public string URL;
@@ -254,19 +255,29 @@ namespace mobile_ca
             L = new HttpListener();
             L.Prefixes.Add(BaseURL);
             L.IgnoreWriteExceptions = true;
-            L.Start();
-            L.BeginGetContext(conin, L);
-            if (StartBrowser)
+            try
             {
-                try
+                L.Start();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Unable to start HTTP server. Reason: {0}", ex.Message);
+            }
+            if (L.IsListening)
+            {
+                L.BeginGetContext(conin, L);
+                if (StartBrowser)
                 {
-                    //Calling Dispose() yourself will somehow throw an exception
-                    //but with the using(...) it does not.
-                    using (Process.Start(BaseURL)) { }
-                }
-                catch (Exception ex)
-                {
-                    Logger.Warn("HTTP: Unable to start browser for {0}. Reason: {1}", Base, ex.Message);
+                    try
+                    {
+                        //Calling Dispose() yourself will somehow throw an exception
+                        //but with the using(...) it does not.
+                        using (Process.Start(BaseURL)) { }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Warn("HTTP: Unable to start browser for {0}. Reason: {1}", Base, ex.Message);
+                    }
                 }
             }
         }
@@ -283,9 +294,16 @@ namespace mobile_ca
             {
                 if (L != null)
                 {
-                    Logger.Info("HTTP: Server shutdown");
-                    L.Stop();
-                    L = null;
+                    if (L.IsListening)
+                    {
+                        Logger.Info("HTTP: Server shutdown");
+                        L.Stop();
+                        L = null;
+                    }
+                    else
+                    {
+                        Logger.Debug("HTTP: Shutdown skipped. Server was never created successfully");
+                    }
                 }
                 else
                 {

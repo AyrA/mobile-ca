@@ -100,11 +100,7 @@ namespace mobile_ca
 #endif
                 if (A.Mode == Mode.help)
                 {
-#if DEBUG
-                    Logger.Debug("Would show Help here");
-#else
-                Help();
-#endif
+                    Help();
                     return SUCCESS;
                 }
                 if (A.Valid)
@@ -113,10 +109,17 @@ namespace mobile_ca
                     {
                         using (Server S = new Server(A.Port, A.OpenBrowser))
                         {
-                            do
+                            if (S.IsListening)
                             {
-                                Logger.Info("Press [ESC] to exit");
-                            } while (WaitForKey() != ConsoleKey.Escape);
+                                do
+                                {
+                                    Logger.Info("Press [ESC] to exit");
+                                } while (WaitForKey() != ConsoleKey.Escape);
+                            }
+                            else
+                            {
+                                return GENERIC_ERROR;
+                            }
                         }
                     }
                     else if (A.Mode == Mode.rsa)
@@ -1012,7 +1015,21 @@ mobile-ca /CERT /KEY <keyfile> /CAC <ca-cert> /CAK <ca-key> [/256] [/EXP <days>]
 To make a wildcard certificate, prefix a domain with '*.', for example *.example.com.
 Be aware that this wildcard cert will be valid for test.example.com but not example.com itself.
 
-", string.Join(", ", CertCommands.ValidKeySizes)), Console.BufferWidth - 1);
+HTTP Server
+===========
+
+Run
+---
+
+This will run a server with a graphical user interface
+
+mobile-ca /http <port> [/b]
+
+port  - Required; Port number from {1}-{2}. 4 or 5 digit numbers recommended to avoid collisions. Numbers less than 1024 require elevated permissions in most cases.
+/b    - Optional; Launches the default web browser
+
+", string.Join(", ", CertCommands.ValidKeySizes), ushort.MinValue + 1, ushort.MaxValue + 1), Console.BufferWidth - 1);
+            Console.WriteLine("OpenSSL Version: {0}", CertCommands.Version());
         }
 
         private static bool HelpRequest(IEnumerable<string> args)

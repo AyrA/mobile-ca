@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace mobile_ca
 {
@@ -119,8 +120,16 @@ namespace mobile_ca
         /// <param name="args">Message Arguments</param>
         public static void Error(string Message, params object[] args)
         {
+            var Trace = Environment.StackTrace
+                //Split trace into lines
+                .Split('\n')
+                //Skip trace generator and this function itself
+                .Skip(3)
+                //Trim end
+                .Select(m => m.TrimEnd())
+                .ToArray();
             Write(LogType.Error, Message, args);
-            Write(LogType.Error, "Location:\r\n{0}",Environment.StackTrace);
+            Write(LogType.Error, "Location:\r\n{0}",string.Join("\r\n",Trace));
         }
 
 #if DEBUG
