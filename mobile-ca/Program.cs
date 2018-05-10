@@ -104,6 +104,7 @@ namespace mobile_ca
                 }
                 if (A.Valid)
                 {
+                    #region Webserver
                     if (A.Mode == Mode.server)
                     {
                         using (Server S = new Server(A.Port, A.OpenBrowser))
@@ -121,6 +122,8 @@ namespace mobile_ca
                             }
                         }
                     }
+                    #endregion
+                    #region RSA
                     else if (A.Mode == Mode.rsa)
                     {
                         var Key = CertCommands.GenerateKey(A.RsaSize);
@@ -143,6 +146,8 @@ namespace mobile_ca
                             Console.WriteLine(Key);
                         }
                     }
+                    #endregion
+                    #region CA
                     else if (A.Mode == Mode.ca)
                     {
                         if (A.IsFile && (A.Action == Action.query || A.Action == Action.uninstall))
@@ -248,6 +253,8 @@ namespace mobile_ca
                                 break;
                         }
                     }
+                    #endregion
+                    #region Cert
                     else if (A.Mode == Mode.cert)
                     {
                         switch (A.Action)
@@ -295,6 +302,11 @@ namespace mobile_ca
                                 break;
                         }
                     }
+                    #endregion
+                    else
+                    {
+                        Logger.Error("Unimplemented Mode: {0}", A.Mode);
+                    }
                 }
                 else
                 {
@@ -304,6 +316,15 @@ namespace mobile_ca
             else
             {
                 Logger.Error("openssl can't be found. Files needed:\r\nopenssl.exe\r\nssleay32.dll\r\nlibeay32.dll");
+                Logger.Info("Trying to obtain filesn now...");
+                if (CertCommands.Obtain("<proc>", true))
+                {
+                    Logger.Info("Files downloaded and ready");
+                }
+                else
+                {
+                    Logger.Warn("Unable to download at least one file. You can try again or put them here manually.");
+                }
             }
             Logger.Log("Application Runtime: {0}ms", (ulong)DateTime.UtcNow.Subtract(Start).TotalMilliseconds);
 #if DEBUG
