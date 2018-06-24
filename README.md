@@ -12,8 +12,9 @@ It works portable
 
 ## Quick Start
 
-1. Double click on the executable to download required dependencies
-2. Run `mobile-ca /http 55555 /b`
+1. Double click on the executable to download required dependencies and wait for it to exit. This needs to be done only once
+2. Double click again to start the web service
+3. Press the [ESC] key once you are done to exit
 
 ## Advanced Usage
 
