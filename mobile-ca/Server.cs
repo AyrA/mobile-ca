@@ -261,7 +261,7 @@ namespace mobile_ca
             {
                 throw new ArgumentException("Invalid Base Path");
             }
-            Base = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(CertBasePath == "<proc>" ? Tools.ProcessDirectory : CertBasePath)), "Data");
+            Base = Path.Combine(Path.GetFullPath(CertBasePath == "<proc>" ? Tools.ProcessDirectory : CertBasePath), "Data");
             if (!IsValidPort(Port))
             {
                 throw new ArgumentOutOfRangeException("Port");
