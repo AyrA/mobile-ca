@@ -73,11 +73,20 @@ namespace mobile_ca
 
         static int Main(string[] args)
         {
+            int RET = SUCCESS;
             DateTime Start = DateTime.UtcNow;
             Logger.Info("Application Start at {0}", Start);
 
             if (CertCommands.ValidateOpenSSL(true))
             {
+                //Launch Webserver if user double clicked the application
+                if (Proc.GetConsoleProcCount() == 1 && args.Length == 0)
+                {
+                    Logger.Warn("This is a console application but you did not start it from a console");
+                    Logger.Warn("We simulate that you passed these arguments: /http 29431 /b");
+                    args = new string[] { "/http", "29431", "/b" };
+                }
+
                 var A = ParseArgs(args);
 
                 //Run Webserver
@@ -94,15 +103,13 @@ namespace mobile_ca
                 //var A = ParseArgs(@"/ca /uninstall C:\temp\CA.crt /F".Split(' '));
                 //Create Certificate with CA
                 //var A = ParseArgs(@"/cert /key Data\01b72657-c0fb-4738-ae1d-b9a1736f14e9.key /CAC Data\DF74671747C7CBC421005CFD87E915E5751ABBDC.ca.crt /CAK Data\8a7f4b5a-fe00-4212-ac7e-9fb1aa1f3347.key /CN test.com /DN *.test.com /IP 1.1.1.1 /IP ::1 /out Data\Cert.crt".Split(' '));
-#if DEBUG
-                Props(A);
-#endif
+
                 if (A.Mode == Mode.help)
                 {
                     Help();
-                    return SUCCESS;
+                    RET = SUCCESS;
                 }
-                if (A.Valid)
+                else if (A.Valid)
                 {
                     #region Webserver
                     if (A.Mode == Mode.server)
@@ -118,7 +125,7 @@ namespace mobile_ca
                             }
                             else
                             {
-                                return GENERIC_ERROR;
+                                RET = GENERIC_ERROR;
                             }
                         }
                     }
@@ -138,7 +145,7 @@ namespace mobile_ca
                                 Logger.Error("Unable to write key to {0}. Reason: {1}", A.Output, ex.Message);
                                 //Log the key to console so it's not lost
                                 Console.WriteLine(Key);
-                                return GENERIC_ERROR;
+                                RET = GENERIC_ERROR;
                             }
                         }
                         else
@@ -162,95 +169,105 @@ namespace mobile_ca
                                 catch (Exception ex)
                                 {
                                     Logger.Error("Unable to read certificate {0}. Reason: {1}", A.Thumbprint, ex.Message);
-                                    return GENERIC_ERROR;
+                                    RET = GENERIC_ERROR;
                                 }
                             }
                             else
                             {
-                                return GENERIC_ERROR;
+                                RET = GENERIC_ERROR;
                             }
                         }
-                        switch (A.Action)
+                        else
                         {
-                            case Action.create:
-                                A.Key = ReadAll(A.Key);
-                                if (A.Key == null)
-                                {
-                                    return GENERIC_ERROR;
-                                }
-                                string CACert = null;
-                                try
-                                {
-                                    CACert = CertCommands.GenerateRootCert(A.Key, A.Expiration, A.Sha256, A.CC, A.ST, A.L, A.O, A.OU, A.CN, A.E);
-                                    if (string.IsNullOrEmpty(CACert))
+                            switch (A.Action)
+                            {
+                                case Action.create:
+                                    A.Key = ReadAll(A.Key);
+                                    if (A.Key == null)
                                     {
-                                        throw new Exception("Openssl did not return a result");
-                                    }
-                                }
-                                catch (Exception ex)
-                                {
-                                    Logger.Error("Unable to create CA certificate. Reason: {0}", ex.Message);
-                                    return GENERIC_ERROR;
-                                }
-                                if (A.Output != null)
-                                {
-                                    try
-                                    {
-                                        File.WriteAllText(A.Output, CACert);
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        Logger.Error("Unable to write cert to {0}. Reason: {1}", A.Output, ex.Message);
-                                        //Log the key to console so it's not lost
-                                        Console.WriteLine(CACert);
-                                        return GENERIC_ERROR;
-                                    }
-                                }
-                                else
-                                {
-                                    Console.WriteLine(CACert);
-                                }
-                                break;
-                            case Action.install:
-                                A.CAC = ReadAll(A.CAC);
-                                if (A.CAC != null)
-                                {
-                                    CertStore.InstallRoot(A.CAC, A.LM);
-                                }
-                                else
-                                {
-                                    Logger.Error("Unable to read Certificate file");
-                                }
-                                break;
-                            case Action.query:
-                                if (CertStore.HasCert(A.Thumbprint))
-                                {
-                                    Logger.Info("Certificate {0} is installed", A.Thumbprint);
-                                }
-                                else
-                                {
-                                    Logger.Info("Certificate {0} is NOT installed", A.Thumbprint);
-                                    return GENERIC_ERROR;
-                                }
-                                break;
-                            case Action.uninstall:
-                                if (CertStore.RemoveRoot(A.Thumbprint, A.LM) > 0)
-                                {
-                                    Logger.Info("Certificate {0} uninstalled", A.Thumbprint);
-                                }
-                                else
-                                {
-                                    if (!CertStore.HasCert(A.Thumbprint))
-                                    {
-                                        Logger.Warn("Certificate {0} not found in store", A.Thumbprint);
+                                        RET = GENERIC_ERROR;
                                     }
                                     else
                                     {
-                                        Logger.Info("Certificate {0} not uninstalled", A.Thumbprint);
+                                        string CACert = null;
+                                        try
+                                        {
+                                            CACert = CertCommands.GenerateRootCert(A.Key, A.Expiration, A.Sha256, A.CC, A.ST, A.L, A.O, A.OU, A.CN, A.E);
+                                            if (string.IsNullOrEmpty(CACert))
+                                            {
+                                                throw new Exception("Openssl did not return a result");
+                                            }
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            Logger.Error("Unable to create CA certificate. Reason: {0}", ex.Message);
+                                            RET = GENERIC_ERROR;
+                                        }
+                                        if (CACert != null)
+                                        {
+                                            if (A.Output != null)
+                                            {
+                                                try
+                                                {
+                                                    File.WriteAllText(A.Output, CACert);
+                                                }
+                                                catch (Exception ex)
+                                                {
+                                                    Logger.Error("Unable to write cert to {0}. Reason: {1}", A.Output, ex.Message);
+                                                    //Log the key to console so it's not lost
+                                                    Console.WriteLine(CACert);
+                                                    RET = GENERIC_ERROR;
+                                                }
+                                            }
+                                            else
+                                            {
+                                                Console.WriteLine(CACert);
+                                            }
+                                        }
                                     }
-                                    return GENERIC_ERROR;
-                                }
-                                break;
+                                    break;
+                                case Action.install:
+                                    A.CAC = ReadAll(A.CAC);
+                                    if (A.CAC != null)
+                                    {
+                                        CertStore.InstallRoot(A.CAC, A.LM);
+                                    }
+                                    else
+                                    {
+                                        Logger.Error("Unable to read Certificate file");
+                                        RET = GENERIC_ERROR;
+                                    }
+                                    break;
+                                case Action.query:
+                                    if (CertStore.HasCert(A.Thumbprint))
+                                    {
+                                        Logger.Info("Certificate {0} is installed", A.Thumbprint);
+                                    }
+                                    else
+                                    {
+                                        Logger.Info("Certificate {0} is NOT installed", A.Thumbprint);
+                                        RET = GENERIC_ERROR;
+                                    }
+                                    break;
+                                case Action.uninstall:
+                                    if (CertStore.RemoveRoot(A.Thumbprint, A.LM) > 0)
+                                    {
+                                        Logger.Info("Certificate {0} uninstalled", A.Thumbprint);
+                                    }
+                                    else
+                                    {
+                                        if (!CertStore.HasCert(A.Thumbprint))
+                                        {
+                                            Logger.Warn("Certificate {0} not found in store", A.Thumbprint);
+                                        }
+                                        else
+                                        {
+                                            Logger.Info("Certificate {0} not uninstalled", A.Thumbprint);
+                                        }
+                                        RET = GENERIC_ERROR;
+                                    }
+                                    break;
+                            }
                         }
                     }
                     #endregion
@@ -265,39 +282,45 @@ namespace mobile_ca
                                 A.CAK = ReadAll(A.CAK);
                                 if (A.Key == null || A.CAC == null || A.CAK == null)
                                 {
-                                    return GENERIC_ERROR;
-                                }
-                                string Cert = null;
-                                try
-                                {
-                                    Cert = CertCommands.GenerateCertificate(A.CAK, A.CAC, A.Key, A.CN, A.IPs.Concat(A.Domains).ToArray(), A.Expiration, A.Sha256, A.CC, A.ST, A.L, A.O, A.OU, A.E);
-                                    if (string.IsNullOrEmpty(Cert))
-                                    {
-                                        throw new Exception("Openssl did not return a result");
-                                    }
-                                }
-                                catch (Exception ex)
-                                {
-                                    Logger.Error("Unable to create certificate. Reason: {0}", ex.Message);
-                                    return GENERIC_ERROR;
-                                }
-                                if (A.Output != null)
-                                {
-                                    try
-                                    {
-                                        File.WriteAllText(A.Output, Cert);
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        Logger.Error("Unable to write cert to {0}. Reason: {1}", A.Output, ex.Message);
-                                        //Log the key to console so it's not lost
-                                        Console.WriteLine(Cert);
-                                        return GENERIC_ERROR;
-                                    }
+                                    RET = GENERIC_ERROR;
                                 }
                                 else
                                 {
-                                    Console.WriteLine(Cert);
+                                    string Cert = null;
+                                    try
+                                    {
+                                        Cert = CertCommands.GenerateCertificate(A.CAK, A.CAC, A.Key, A.CN, A.IPs.Concat(A.Domains).ToArray(), A.Expiration, A.Sha256, A.CC, A.ST, A.L, A.O, A.OU, A.E);
+                                        if (string.IsNullOrEmpty(Cert))
+                                        {
+                                            throw new Exception("Openssl did not return a result");
+                                        }
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Logger.Error("Unable to create certificate. Reason: {0}", ex.Message);
+                                        RET = GENERIC_ERROR;
+                                    }
+                                    if (Cert != null)
+                                    {
+                                        if (A.Output != null)
+                                        {
+                                            try
+                                            {
+                                                File.WriteAllText(A.Output, Cert);
+                                            }
+                                            catch (Exception ex)
+                                            {
+                                                Logger.Error("Unable to write cert to {0}. Reason: {1}", A.Output, ex.Message);
+                                                //Log the key to console so it's not lost
+                                                Console.WriteLine(Cert);
+                                                RET = GENERIC_ERROR;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            Console.WriteLine(Cert);
+                                        }
+                                    }
                                 }
                                 break;
                         }
@@ -327,11 +350,15 @@ namespace mobile_ca
                 }
             }
             Logger.Log("Application Runtime: {0}ms", (ulong)DateTime.UtcNow.Subtract(Start).TotalMilliseconds);
-#if DEBUG
-            Logger.Debug("#END - Press any key to exit");
-            WaitForKey();
-#endif
-            return SUCCESS;
+
+            //Wait for a user key press if we are the only process attached to this terminal
+            if (Proc.GetConsoleProcCount() == 1)
+            {
+                Logger.Debug("#END - Press any key to exit");
+                WaitForKey();
+            }
+
+            return RET;
         }
 
         private static CmdArgs ParseArgs(string[] args)
