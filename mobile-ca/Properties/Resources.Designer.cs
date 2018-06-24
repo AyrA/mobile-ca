@@ -65,22 +65,23 @@ namespace mobile_ca.Properties {
         ///
         ///var config = null;
         ///
+        ///function getCertsOfCA(hash) {
+        ///    var ret = [];
+        ///    $(&quot;#cert tbody [data-content]&quot;).each(function () {
+        ///        var cert = $(this).data(&quot;content&quot;);
+        ///        if (cert.issuer === hash) {
+        ///            ret.push(cert);
+        ///        }
+        ///    });
+        ///    return ret;
+        ///}
+        ///
         ///function getIdFromPubkey(pubkey) {
         ///    var id = null;
         ///    $(&quot;#keys tbody [data-content]&quot;).each(function () {
         ///        var key = $(this).data(&quot;content&quot;);
         ///        if (key.pubkey === pubkey) {
-        ///            id = key.id;
-        ///        }
-        ///    });
-        ///    return id;
-        ///}
-        ///
-        ///function getCertsForPubkey(pubkey) {
-        ///    var certList = { ca: [], cert: [] };
-        ///    $(&quot;#ca tbody [data-content]&quot;).each(function (v) {
-        ///        var cert = $(this).data(&quot;content&quot;);
-        ///        if (cert.pubkey === pubk [rest of string was truncated]&quot;;.
+        ///            id = key [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string api_js {
             get {
@@ -117,13 +118,27 @@ namespace mobile_ca.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to body
-        ///{
+        ///   Looks up a localized string similar to tbody tr[data-content] {
+        ///    cursor: pointer;
+        ///}
+        ///h1 button,
+        ///th button {
+        ///    float:right;
         ///}.
         /// </summary>
         internal static string custom_css {
             get {
                 return ResourceManager.GetString("custom_css", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
+        internal static System.Drawing.Icon icon {
+            get {
+                object obj = ResourceManager.GetObject("icon", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
             }
         }
         
@@ -136,10 +151,10 @@ namespace mobile_ca.Properties {
         ///    &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot; /&gt;
         ///    &lt;meta charset=&quot;utf-8&quot; /&gt;
         ///    &lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;bootstrap.css&quot; /&gt;
+        ///    &lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;custom.css&quot; /&gt;
         ///    &lt;script type=&quot;text/javascript&quot; src=&quot;jquery.js&quot;&gt;&lt;/script&gt;
         ///    &lt;script type=&quot;text/javascript&quot; src=&quot;popper.js&quot;&gt;&lt;/script&gt;
-        ///    &lt;script type=&quot;text/javascript&quot; src=&quot;bootstrap.js&quot;&gt;&lt;/script&gt;
-        ///    &lt;script type=&quot;text/javascript&quot; src=&quot;api [rest of string was truncated]&quot;;.
+        ///    &lt;script type=&quot;text/javascript&quot; src=&quot;boo [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string index_html {
             get {
