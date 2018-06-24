@@ -354,7 +354,7 @@ namespace mobile_ca
             //Wait for a user key press if we are the only process attached to this terminal
             if (Proc.GetConsoleProcCount() == 1)
             {
-                Logger.Debug("#END - Press any key to exit");
+                Logger.Info("#END - Press any key to exit");
                 WaitForKey();
             }
 
