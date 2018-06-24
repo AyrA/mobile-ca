@@ -4,17 +4,25 @@ using System.Text;
 
 namespace mobile_ca
 {
+    /// <summary>
+    /// Provides information regarding the current Terminal
+    /// </summary>
     public static class Proc
     {
-        [DllImport("kernel32.dll", ExactSpelling = true, EntryPoint = "QueryFullProcessImageNameW", CharSet = CharSet.Unicode)]
-        private static extern bool QueryFullProcessImageName(IntPtr hProcess, uint dwFlags, StringBuilder lpExeName, ref uint lpdwSize);
-
-        [DllImport("kernel32.dll", ExactSpelling = true)]
-        private static extern IntPtr OpenProcess(uint dwDesiredAccess, bool bInheritHandle, int dwProcessId);
-
+        /// <summary>
+        /// Gets the List of all processes associated with the current console
+        /// </summary>
+        /// <param name="processList">Placeholder array for Process IDs</param>
+        /// <param name="processCount">Length of the Array</param>
+        /// <returns>Number of processes associated with this terminal</returns>
+        /// <remarks>If the return value is bigger than <paramref name="processCount"/> you need to extend the array as no entries were added in that case</remarks>
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern int GetConsoleProcessList(uint[] processList, int processCount);
 
+        /// <summary>
+        /// Gets the list of all process IDs associated with this terminal
+        /// </summary>
+        /// <returns>Process ID list</returns>
         public static uint[] GetConsoleProcList()
         {
             uint[] List = new uint[100];
@@ -24,6 +32,8 @@ namespace mobile_ca
                 Count = GetConsoleProcessList(List, List.Length);
                 if (Count > List.Length)
                 {
+                    //Add some extra space in case processes were spawned.
+                    //No need to use Array.Resize since the contents are not set at all if the list is too small
                     List = new uint[Count + 10];
                 }
             }
@@ -31,9 +41,14 @@ namespace mobile_ca
             return List;
         }
 
+        /// <summary>
+        /// Gets the number of processes associated with this terminal
+        /// </summary>
+        /// <returns>Number of processes including this one</returns>
+        /// <remarks>This call is faster than <see cref="GetConsoleProcList"/>().Length</remarks>
         public static int GetConsoleProcCount()
         {
-            return GetConsoleProcList().Length;
+            return GetConsoleProcessList(new uint[1], 1);
         }
     }
 }
