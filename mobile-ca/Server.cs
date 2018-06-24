@@ -232,7 +232,8 @@ namespace mobile_ca
             new BinaryContent("/popper.js",    Properties.Resources.popper_js,     true),
             new BinaryContent("/index.html",   Properties.Resources.index_html,    true),
             new BinaryContent("/api.js",       Properties.Resources.api_js,        true),
-            new BinaryContent("/custom.css",   Properties.Resources.custom_css,    true)
+            new BinaryContent("/custom.css",   Properties.Resources.custom_css,    true),
+            new BinaryContent("/favicon.ico",  Properties.Resources.icon,          true)
         };
 
         private HttpListener L;
@@ -386,6 +387,7 @@ namespace mobile_ca
                 "script-src 'self';" +
                 "style-src 'self' 'unsafe-inline';" +
                 "connect-src 'self';" +
+                "img-src 'self';" +
                 "form-action 'self';" +
                 "block-all-mixed-content");
             if (ctx.Request.Url.Scheme.ToLower() == "https")

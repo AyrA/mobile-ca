@@ -84,6 +84,7 @@
     <None Include="Resources\bootstrap.min.js" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Resources\icon.bin" />
     <None Include="Resources\jquery.slim.min.js" />
   </ItemGroup>
   <ItemGroup>

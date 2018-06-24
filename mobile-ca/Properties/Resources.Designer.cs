@@ -133,12 +133,12 @@ namespace mobile_ca.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
-        internal static System.Drawing.Icon icon {
+        internal static byte[] icon {
             get {
                 object obj = ResourceManager.GetObject("icon", resourceCulture);
-                return ((System.Drawing.Icon)(obj));
+                return ((byte[])(obj));
             }
         }
         
@@ -152,9 +152,9 @@ namespace mobile_ca.Properties {
         ///    &lt;meta charset=&quot;utf-8&quot; /&gt;
         ///    &lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;bootstrap.css&quot; /&gt;
         ///    &lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;custom.css&quot; /&gt;
+        ///    &lt;link rel=&quot;icon&quot; type=&quot;image/ico&quot; href=&quot;favicon.ico&quot; /&gt;
         ///    &lt;script type=&quot;text/javascript&quot; src=&quot;jquery.js&quot;&gt;&lt;/script&gt;
-        ///    &lt;script type=&quot;text/javascript&quot; src=&quot;popper.js&quot;&gt;&lt;/script&gt;
-        ///    &lt;script type=&quot;text/javascript&quot; src=&quot;boo [rest of string was truncated]&quot;;.
+        ///    &lt;script type=&quot;text/javascript&quot; src=&quot;popp [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string index_html {
             get {
