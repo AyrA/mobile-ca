@@ -15,17 +15,10 @@ namespace mobile_ca
     /// </summary>
     public static class CertCommands
     {
-#if DEBUG
-        /// <summary>
-        /// Command for OpenSSL
-        /// </summary>
-        public const string OPENSSL_COMMAND = @"C:\OpenSSL-Win32\bin\openssl.exe";
-#else
         /// <summary>
         /// Command for OpenSSL
         /// </summary>
         public const string OPENSSL_COMMAND = @"openssl.exe";
-#endif
 
         /// <summary>
         /// Valid RSA Key sizes.
@@ -44,7 +37,8 @@ namespace mobile_ca
         {
             {"https://master.ayra.ch/LOGIN/pub/applications/Tools/OpenSSL/openssl.exe" ,"openssl.exe" },
             {"https://master.ayra.ch/LOGIN/pub/applications/Tools/OpenSSL/libeay32.dll","libeay32.dll"},
-            {"https://master.ayra.ch/LOGIN/pub/applications/Tools/OpenSSL/ssleay32.dll","ssleay32.dll"}
+            {"https://master.ayra.ch/LOGIN/pub/applications/Tools/OpenSSL/ssleay32.dll","ssleay32.dll"},
+            {"https://master.ayra.ch/LOGIN/pub/applications/Tools/OpenSSL/openssl.cfg","openssl.cfg"}
         };
 
         /// <summary>
@@ -54,9 +48,12 @@ namespace mobile_ca
         public static bool ValidateOpenSSL(bool CheckVersion = false)
         {
             var FullPath = Path.GetDirectoryName(Path.Combine(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName), OPENSSL_COMMAND));
+            //Override OpenSSL configuration for portability
+            Environment.SetEnvironmentVariable("OPENSSL_CONF", Path.Combine(FullPath, "openssl.cfg"));
             if (File.Exists(Path.Combine(FullPath, OPENSSL_COMMAND)) &&
                 File.Exists(Path.Combine(FullPath, "libeay32.dll")) &&
-                File.Exists(Path.Combine(FullPath, "ssleay32.dll")))
+                File.Exists(Path.Combine(FullPath, "ssleay32.dll")) &&
+                File.Exists(Path.Combine(FullPath, "openssl.cfg")))
             {
                 if (CheckVersion && string.IsNullOrEmpty(Version()))
                 {
